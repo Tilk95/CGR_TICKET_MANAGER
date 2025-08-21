@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" data-theme="dark">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CGR Ticket Manager – v3 (mobile‑first)</title>
+  <title>CGR Ticket Manager – v3.3 (mobile‑first)</title>
   <!-- PWA & Icons -->
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" sizes="192x192" href="/icon-192.png">
@@ -14,10 +14,24 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
   <style>
-    :root{--bg:#0b1020;--card:#141a2a;--muted:#9aa6bf;--accent:#8bd3ff;--ok:#19c37d;--warn:#ffb422;--danger:#ff5d5d}
+    :root{
+      --bg:#0b1020; --fg:#ffffff; --card:#141a2a; --muted:#9aa6bf; --accent:#8bd3ff;
+      --ok:#19c37d; --warn:#ffb422; --danger:#ff5d5d; --border:#1f2741;
+      --tag-bg:#0e162c; --tag-bd:#2a345a; --tag-fg:#cfe;
+      --pass-bg:#ffffff; --pass-fg:#000000;
+    }
+    [data-theme="light"]{
+      --bg:#f5f7fb; --fg:#0f172a; --card:#ffffff; --muted:#475569; --accent:#0ea5e9;
+      --ok:#16a34a; --warn:#f59e0b; --danger:#ef4444; --border:#d9e2f1;
+      --tag-bg:#f1f5f9; --tag-bd:#d0d7e2; --tag-fg:#0f172a;
+      --pass-bg:#ffffff; --pass-fg:#000000;
+    }
+
     *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);color:#fff;font:16px/1.35 system-ui,Segoe UI,Roboto,Ubuntu,Helvetica,Arial}
-    header{position:sticky;top:0;z-index:10;background:linear-gradient(180deg,#121a30,#0c1222);border-bottom:1px solid #1f2741}
+    body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.35 system-ui,Segoe UI,Roboto,Ubuntu,Helvetica,Arial}
+    header{position:sticky;top:0;z-index:10;background:linear-gradient(180deg,rgba(18,26,48,.95),rgba(12,18,34,.95));border-bottom:1px solid var(--border)}
+    [data-theme="light"] header{background:linear-gradient(180deg,#ffffff,#f5f7fb);box-shadow:0 1px 0 rgba(15,23,42,.06)}
+
     .wrap{max-width:740px;margin:0 auto;padding:14px}
     h1{margin:0;font-size:18px}
     .muted{color:var(--muted)}
@@ -25,51 +39,55 @@
     /* Toolbar haut */
     .topbar{display:flex;align-items:center;gap:10px}
     .spacer{flex:1}
-    .btn{display:inline-flex;align-items:center;gap:8px;border:1px solid #2a345a;background:#182038;color:#fff;padding:10px 12px;border-radius:12px;font-size:15px}
+    .btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--tag-bd);background:#182038;color:var(--fg);padding:10px 12px;border-radius:12px;font-size:15px}
     .btn.primary{background:#1a2a4f;border-color:#2d4e8a}
     .btn.ghost{background:transparent}
+    [data-theme="light"] .btn{background:#eef2ff;color:#0f172a;border-color:#c7d2fe}
+    [data-theme="light"] .btn.primary{background:#dbeafe;border-color:#93c5fd}
 
     /* Zone stats & recherche */
     .bar{display:flex;align-items:center;gap:10px;margin-top:10px}
-    input[type="text"],select{flex:1;min-width:0;background:#0e152b;border:1px solid #2a345a;color:#fff;border-radius:12px;padding:10px 12px}
+    input[type="text"],select{flex:1;min-width:0;background:#0e152b;border:1px solid var(--tag-bd);color:var(--fg);border-radius:12px;padding:10px 12px}
+    [data-theme="light"] input[type="text"], [data-theme="light"] select{background:#ffffff;border-color:#cbd5e1;color:#0f172a}
 
     /* Liste mobile des tickets */
     .list{display:flex;flex-direction:column;gap:10px;margin-top:12px}
-    .item{background:var(--card);border:1px solid #1f2741;border-radius:14px;padding:12px;display:flex;gap:10px;align-items:center}
+    .item{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px;display:flex;gap:10px;align-items:center}
     .left{display:flex;flex-direction:column;align-items:flex-start;gap:4px;flex:1}
     .code{font-family:ui-monospace, SFMono-Regular, Menlo, monospace;font-size:14px}
     .meta{font-size:12px;color:var(--muted)}
-    .tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;border:1px solid #2a345a;background:#0e162c;color:#cfe}
-    .tag.type{color:#bcd}
+    .tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;border:1px solid var(--tag-bd);background:var(--tag-bg);color:var(--tag-fg)}
+    .tag.type{color:var(--muted)}
     .tag.ok{border-color:#17634a;background:#0f2b22;color:#aef1d6}
     .tag.exp{border-color:#6a2b2b;background:#2b1212;color:#ffb3b3}
     .tag.used{border-color:#515151;background:#1b1b1b;color:#ccc}
+    [data-theme="light"] .tag.ok{border-color:#16a34a;background:#e7f8ef;color:#065f46}
+    [data-theme="light"] .tag.exp{border-color:#ef4444;background:#ffeaea;color:#7f1d1d}
+    [data-theme="light"] .tag.used{border-color:#94a3b8;background:#f1f5f9;color:#334155}
+
     .item .actions{display:flex;gap:8px}
-    .btn.small{padding:8px 10px;border-radius:10px;font-size:14px}/* Modal d'import */
+    .btn.small{padding:8px 10px;border-radius:10px;font-size:14px}
+
+    /* Modal d'import */
     .modal{position:fixed;inset:0;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.5);z-index:30}
     .modal.show{display:flex}
     .sheet{width:100%;max-width:740px;background:#0b1327;border-top-left-radius:14px;border-top-right-radius:14px;border:1px solid #23335a;padding:14px}
+    [data-theme="light"] .sheet{background:#ffffff;border-color:#e2e8f0}
     .sheet h2{margin:0 0 8px 0;font-size:18px}
     .drop{border:2px dashed #39507f;border-radius:14px;padding:16px;text-align:left;background:#0b1a36}
     .drop.dragover{background:#0e244a;border-color:#5f86d0}
-    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-    .small{font-size:12px}
+    [data-theme="light"] .drop{background:#f8fafc;border-color:#cbd5e1}
 
     /* Pass scannable plein écran */
-    #pass{position:fixed;inset:0;background:#fff;color:#000;display:none;flex-direction:column;align-items:center;justify-content:center;gap:20px;z-index:50}
+    #pass{position:fixed;inset:0;background:var(--pass-bg);color:var(--pass-fg);display:none;flex-direction:column;align-items:center;justify-content:center;gap:20px;z-index:50}
     #pass.show{display:flex}
     #pass .toolbar{position:fixed;top:10px;left:10px;right:10px;display:flex;justify-content:space-between}
     #pass .code{font-size:22px;letter-spacing:2px}
     #barcode{max-width:92vw}
 
     /* Desktop améliorations */
-    @media (min-width:900px){
-      body{font-size:15px}
-      .wrap{max-width:960px}
-    }
-    /* Harmonisation du bandeau (header) en mode clair */
-  [data-theme="light"] header{background:linear-gradient(180deg,#ffffff,#f5f7fb);border-bottom:1px solid var(--border);box-shadow:0 1px 0 rgba(15,23,42,.06)}
-</style>
+    @media (min-width:900px){body{font-size:15px}.wrap{max-width:960px}}
+  </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";</script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.13/dayjs.min.js"></script>
@@ -82,6 +100,7 @@
   <div class="wrap topbar">
     <h1>🎟️ CGR Tickets</h1>
     <div class="spacer"></div>
+    <button class="btn ghost" id="btnTheme">☀️ Clair</button>
     <button class="btn ghost" id="btnShowAll">Voir tous</button>
     <button class="btn primary" id="btnAdd">＋ Ajouter</button>
   </div>
@@ -100,7 +119,7 @@
 <!-- MODAL d'import -->
 <div class="modal" id="modal">
   <div class="sheet">
-    <div class="row" style="justify-content:space-between">
+    <div class="row" style="display:flex;justify-content:space-between;align-items:center;gap:10px">
       <h2>Ajouter des billets</h2>
       <button class="btn" id="closeModal">Fermer</button>
     </div>
@@ -109,7 +128,7 @@
       <input id="file" type="file" accept="application/pdf" multiple hidden />
       <div class="small muted" style="margin-top:6px">Les doublons (même code) sont ignorés.</div>
     </div>
-    <div class="row" style="margin-top:10px">
+    <div class="row" style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
       <button class="btn" id="btnImportJson">Importer JSON</button>
       <button class="btn warn" id="btnExportJson">Exporter JSON</button>
       <input id="importJsonFile" type="file" accept="application/json" hidden />
@@ -134,8 +153,9 @@
 
 <script>
 const $ = s => document.querySelector(s);
-const on = (el,ev,fn) => el.addEventListener(ev,fn);
+const on = (el,ev,fn) => el && el.addEventListener(ev,fn);
 const LS_KEY = 'cgrTickets.v1';
+const THEME_KEY = 'cgrTheme';
 let SHOW_ALL = false; // Par défaut: afficher seulement les disponibles
 
 function loadDB(){ try{ return JSON.parse(localStorage.getItem(LS_KEY)||'[]'); }catch(e){ return [] } }
@@ -144,15 +164,20 @@ let DB = loadDB();
 
 function fmtDate(d){ return dayjs(d).format('DD/MM/YYYY'); }
 function isExpired(d){ return dayjs(d).endOf('day').isBefore(dayjs()); }
-
 function ticketsAvailable(list){ return list.filter(r=>!r.used && !isExpired(r.validUntil)); }
+
+// ===== THEME =====
+function setTheme(t){ document.documentElement.setAttribute('data-theme', t); localStorage.setItem(THEME_KEY, t); updateThemeBtn(); }
+function getTheme(){ return localStorage.getItem(THEME_KEY) || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'); }
+function toggleTheme(){ setTheme(getTheme()==='dark' ? 'light' : 'dark'); }
+function updateThemeBtn(){ const t=getTheme(); const b=$('#btnTheme'); if(b) b.textContent = t==='dark' ? '☀️ Clair' : '🌙 Sombre'; }
+setTheme(getTheme());
 
 function render(){
   const q = $('#q').value.trim().toUpperCase();
   let rows = DB.slice();
   if(!SHOW_ALL) rows = ticketsAvailable(rows);
   if(q){ rows = rows.filter(r=> r.code.toUpperCase().includes(q) || (r.codeweb||'').toUpperCase().includes(q)); }
-  // Tri: d'abord expiration proche
   rows.sort((a,b)=> a.validUntil.localeCompare(b.validUntil));
 
   const list = $('#list'); list.innerHTML='';
@@ -266,15 +291,14 @@ function upsertTickets(tickets){
 
 async function handleFiles(files){
   if(!files.length) return;
-  drop.innerHTML = '⏳ Lecture…';
+  const old = $('#drop').innerHTML;
+  $('#drop').innerHTML = '⏳ Lecture…';
   const all=[];
   for(const f of files){
     try{ const items = await parsePdf(f); all.push(...items);}catch(err){ console.error(err); alert('Erreur lecture '+f.name); }
   }
   upsertTickets(all);
-  // rétablir contenu drop
-  drop.innerHTML = 'Dépose tes PDF CGR ici ou <label class="btn primary" for="file">Choisir des fichiers</label>\n      <input id="file" type="file" accept="application/pdf" multiple hidden />\n      <div class="small muted" style="margin-top:6px">Les doublons (même code) sont ignorés.</div>';
-  // relier à nouveau l'input
+  $('#drop').innerHTML = old;
   $('#file').addEventListener('change', async e=>{ await handleFiles([...e.target.files]) });
 }
 
@@ -283,27 +307,49 @@ const passEl = $('#pass');
 const barcodeEl = $('#barcode');
 let currentIdx = -1;
 
+function requestFS(el){
+  try{
+    if(el.requestFullscreen) return el.requestFullscreen();
+    if(el.webkitRequestFullscreen) return el.webkitRequestFullscreen();
+    if(el.msRequestFullscreen) return el.msRequestFullscreen();
+  }catch(_){}
+}
+function exitFS(){
+  try{
+    if(document.exitFullscreen) return document.exitFullscreen();
+    if(document.webkitExitFullscreen) return document.webkitExitFullscreen();
+    if(document.msExitFullscreen) return document.msExitFullscreen();
+  }catch(_){}
+}
+
 function openPass(ticket){
   currentIdx = DB.findIndex(t=>t.code===ticket.code);
   passEl.classList.add('show');
   JsBarcode(barcodeEl, ticket.code, {format:'CODE128', displayValue:false, height:140, width:2, margin:16});
   $('#passCode').textContent = ticket.code;
   $('#passMeta').textContent = `${ticket.type||'Type ?'} • Valable jusqu'au ${fmtDate(ticket.validUntil)}${ticket.used?' • déjà marqué utilisé':''}`;
+  const p = requestFS(passEl); if(p && p.catch){ p.catch(()=>{}); }
 }
 
-function closePass(){ passEl.classList.remove('show'); if(document.fullscreenElement) document.exitFullscreen().catch(()=>{}); }
+function closePass(){ passEl.classList.remove('show'); exitFS(); }
 
 on($('#closePass'),'click',closePass);
-on($('#fsToggle'),'click',()=>{ if(!document.fullscreenElement){ passEl.requestFullscreen().catch(()=>{});} else { document.exitFullscreen().catch(()=>{});} });
-on($('#invertBg'),'click',()=>{ passEl.style.background = passEl.style.background==='#000' ? '#fff' : '#000'; passEl.style.color = passEl.style.background==='#000' ? '#fff' : '#000'; });
+on($('#fsToggle'),'click',()=>{ if(!document.fullscreenElement){ requestFS(passEl);} else { exitFS(); } });
+on($('#invertBg'),'click',()=>{
+  // Basculer uniquement le pass entre clair/sombre pour améliorer la lecture par le scanner
+  const isLight = getComputedStyle(passEl).backgroundColor !== 'rgb(0, 0, 0)';
+  passEl.style.background = isLight ? '#000' : '#fff';
+  passEl.style.color = isLight ? '#fff' : '#000';
+});
 on($('#markUsed'),'click',()=>{ if(currentIdx>-1){ DB[currentIdx].used=true; saveDB(DB); closePass(); }});
 
 // Interactions
 on($('#btnShowAll'),'click',()=>{ SHOW_ALL=!SHOW_ALL; render(); });
 on($('#q'),'input',render);
+on($('#btnTheme'),'click',toggleTheme);
 
 // Par défaut: vue "disponibles"
-render();
+render(); updateThemeBtn();
 </script>
 </body>
 </html>
