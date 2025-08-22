@@ -42,8 +42,10 @@
     .btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--tag-bd);background:#182038;color:var(--fg);padding:10px 12px;border-radius:12px;font-size:15px}
     .btn.primary{background:#1a2a4f;border-color:#2d4e8a}
     .btn.ghost{background:transparent}
+    .btn.danger{background:#4a1a1a;border-color:#8a2d2d;color:#ffb3b3}
     [data-theme="light"] .btn{background:#eef2ff;color:#0f172a;border-color:#c7d2fe}
     [data-theme="light"] .btn.primary{background:#dbeafe;border-color:#93c5fd}
+    [data-theme="light"] .btn.danger{background:#fef2f2;color:#dc2626;border-color:#fca5a5}
 
     /* Zone stats & recherche */
     .bar{display:flex;align-items:center;gap:10px;margin-top:10px}
@@ -194,10 +196,23 @@ function render(){
       <div class="actions">
         ${(!r.used && !isExpired(r.validUntil))?'<button class="btn small" data-pass>🧾 Pass</button>':''}
         <button class="btn small" data-toggle>✔︎</button>
+        <button class="btn small danger" data-delete>🗑️</button>
       </div>`;
     item.querySelector('[data-toggle]').onclick = ()=>{ r.used=!r.used; saveDB(DB); };
     const passBtn = item.querySelector('[data-pass]');
     if(passBtn) passBtn.onclick = ()=> openPass(r);
+    
+    // Ajout de la fonctionnalité de suppression
+    const deleteBtn = item.querySelector('[data-delete]');
+    deleteBtn.onclick = () => {
+      if (confirm(`Êtes-vous sûr de vouloir supprimer le ticket ${r.code} ?\n\nCette action est irréversible.`)) {
+        const index = DB.findIndex(t => t.code === r.code);
+        if (index > -1) {
+          DB.splice(index, 1);
+          saveDB(DB);
+        }
+      }
+    };
     list.appendChild(item);
   });
   const total = DB.length;
@@ -241,7 +256,8 @@ on($('#importJsonFile'),'change', async e=>{
 const CODE_RE = /CIN\d{5}[A-Z]\d{5}[A-Z0-9]{2}/g; // CIN50718P11777D0
 const DATE_RE = /Valable\s+jusqu'?au\s*[:\-]?\s*(\d{2}[\/-]\d{2}[\/-]\d{4})/i;
 const CODEWEB_RE = /CODE\s*WEB\s*[:\-]?\s*([A-Z0-9]{5,6})/i;
-const ICE_HINT_RE = /ICE|PREMIUM\s*ICE/i;
+// Détection précise des billets ICE : cherche "PLACE CGR ICE" spécifiquement
+const ICE_HINT_RE = /PLACE\s+CGR\s+ICE/i;
 
 async function parsePdf(file){
   const arrayBuffer = await file.arrayBuffer();
@@ -257,7 +273,16 @@ async function parsePdf(file){
     const validUntil = dm? dayjs(dm[1].replace(/\//g,'-').replace(/(\d{2})-(\d{2})-(\d{4})/,'$3-$2-$1')).format('YYYY-MM-DD') : null;
     const cwm = text.match(CODEWEB_RE);
     const codeweb = cwm? cwm[1].trim() : null;
-    const type = ICE_HINT_RE.test(text)? 'ICE' : 'Standard';
+    // Détection robuste des types de billets
+    let type = 'Standard'; // Par défaut
+    
+    // Vérifier plusieurs patterns possibles pour ICE
+    if (ICE_HINT_RE.test(text) || 
+        /PLACE\s+CGR\s+ICE/i.test(text) ||
+        /1\s+PLACE\s+CGR\s+ICE/i.test(text) ||
+        /CGR\s+ICE/i.test(text)) {
+      type = 'ICE';
+    }
 
     for(const c of codes){
       const core = c.code.slice(0,-2);
