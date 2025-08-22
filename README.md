@@ -16,7 +16,9 @@ Application PWA 100% client (Vanilla JS) pour gérer des billets CGR Cinémas av
 - **Détection robuste** : Multi-patterns pour une identification fiable
 
 ### 🗑️ **Gestion des Tickets**
-- **Marquage utilisé** : Toggle rapide du statut
+- **Marquage utilisé** : Modal de saisie avec film, date/heure et notes
+- **Édition des informations** : Modification des détails d'usage existants
+- **Historique d'usage** : Suivi complet des séances regardées
 - **Suppression manuelle** : Bouton de suppression avec confirmation
 - **Statuts visuels** : Disponible, expiré, utilisé
 - **Recherche** : Par code CIN ou code web
@@ -63,6 +65,13 @@ Application PWA 100% client (Vanilla JS) pour gérer des billets CGR Cinémas av
   type: "ICE" | "Standard",        // Type détecté automatiquement
   validUntil: "2025-05-04",        // Date de validité
   used: false,                     // Statut d'utilisation
+  usage: {                         // Informations d'usage (si utilisé)
+    film: "Nom du film",           // Film regardé
+    datetime: "2025-01-15T20:30", // Date et heure de la séance
+    notes: "Salle 5, 3D",         // Notes optionnelles
+    usedAt: "2025-01-15T20:25",   // Date/heure de marquage
+    updatedAt: "2025-01-15T20:25" // Date/heure de dernière modification
+  },
   prefix: "CIN40819",              // Préfixe extrait
   letter: "B",                     // Lettre extraite
   num: "83613",                    // Numéro extrait

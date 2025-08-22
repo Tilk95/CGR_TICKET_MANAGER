@@ -79,6 +79,16 @@
     .drop{border:2px dashed #39507f;border-radius:14px;padding:16px;text-align:left;background:#0b1a36}
     .drop.dragover{background:#0e244a;border-color:#5f86d0}
     [data-theme="light"] .drop{background:#f8fafc;border-color:#cbd5e1}
+    
+    /* Champs de saisie */
+    input[type="text"], input[type="datetime-local"], textarea, select{flex:1;min-width:0;background:#0e152b;border:1px solid var(--tag-bd);color:var(--fg);border-radius:12px;padding:10px 12px;font-family:inherit}
+    [data-theme="light"] input[type="text"], [data-theme="light"] input[type="datetime-local"], [data-theme="light"] textarea, [data-theme="light"] select{background:#ffffff;border-color:#cbd5e1;color:#0f172a}
+    
+    /* Informations d'usage */
+    .usage-info{font-size:12px;color:var(--muted);margin-top:4px;padding:6px 8px;background:var(--tag-bg);border-radius:8px;border:1px solid var(--tag-bd)}
+    .usage-info .film{font-weight:500;color:var(--accent)}
+    .usage-info .datetime{color:var(--muted)}
+    .usage-info .notes{font-style:italic;margin-top:4px}
 
     /* Pass scannable plein écran */
     #pass{position:fixed;inset:0;background:var(--pass-bg);color:var(--pass-fg);display:none;flex-direction:column;align-items:center;justify-content:center;gap:20px;z-index:50}
@@ -153,6 +163,31 @@
   <div class="small muted" id="passMeta">—</div>
 </div>
 
+<!-- MODAL D'UTILISATION -->
+<div class="modal" id="usageModal">
+  <div class="sheet">
+    <div class="row" style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+      <h2>Marquer le ticket comme utilisé</h2>
+      <button class="btn" id="closeUsageModal">Fermer</button>
+    </div>
+    <div style="margin-top:16px">
+      <label style="display:block;margin-bottom:8px;font-weight:500">Film regardé (optionnel)</label>
+      <input id="usageFilm" type="text" placeholder="Nom du film (peut être saisi plus tard)" style="width:100%;margin-bottom:16px" />
+      
+      <label style="display:block;margin-bottom:8px;font-weight:500">Date et heure</label>
+      <input id="usageDateTime" type="datetime-local" style="width:100%;margin-bottom:16px" />
+      
+      <label style="display:block;margin-bottom:8px;font-weight:500">Notes (optionnel)</label>
+      <textarea id="usageNotes" placeholder="Commentaires, salle, compagnie..." style="width:100%;height:80px;resize:vertical;margin-bottom:16px"></textarea>
+      
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn" id="cancelUsage">Annuler</button>
+        <button class="btn primary" id="confirmUsage">Confirmer l'utilisation</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 const $ = s => document.querySelector(s);
 const on = (el,ev,fn) => el && el.addEventListener(ev,fn);
@@ -192,15 +227,37 @@ function render(){
         <div>${status} <span class="tag type">${r.type||'?'}</span></div>
         <div class="code">${r.code}</div>
         <div class="meta">Valable jusqu'au ${fmtDate(r.validUntil)}${r.codeweb?` • Code Web ${r.codeweb}`:''}</div>
+        ${r.usage ? `<div class="usage-info">
+          <div class="film">🎬 ${r.usage.film}</div>
+          <div class="datetime">📅 ${fmtDate(r.usage.datetime)} à ${new Date(r.usage.datetime).toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'})}</div>
+          ${r.usage.notes ? `<div class="notes">💭 ${r.usage.notes}</div>` : ''}
+        </div>` : ''}
       </div>
       <div class="actions">
         ${(!r.used && !isExpired(r.validUntil))?'<button class="btn small" data-pass>🧾 Pass</button>':''}
         <button class="btn small" data-toggle>✔︎</button>
+        ${r.used ? '<button class="btn small" data-edit-usage>✏️</button>' : ''}
         <button class="btn small danger" data-delete>🗑️</button>
       </div>`;
-    item.querySelector('[data-toggle]').onclick = ()=>{ r.used=!r.used; saveDB(DB); };
+    item.querySelector('[data-toggle]').onclick = ()=>{
+      if (!r.used) {
+        // Si on marque comme utilisé, ouvrir le modal d'usage
+        openUsageModal(r);
+      } else {
+        // Si on remet comme disponible, demander confirmation
+        if (confirm(`Êtes-vous sûr de vouloir remettre le ticket ${r.code} comme disponible ?\n\nLes informations d'usage (film, date, notes) seront supprimées définitivement.`)) {
+          r.used = false;
+          delete r.usage;
+          saveDB(DB);
+        }
+      }
+    };
     const passBtn = item.querySelector('[data-pass]');
     if(passBtn) passBtn.onclick = ()=> openPass(r);
+    
+    // Ajout de la fonctionnalité d'édition des informations d'usage
+    const editUsageBtn = item.querySelector('[data-edit-usage]');
+    if(editUsageBtn) editUsageBtn.onclick = ()=> openUsageModal(r);
     
     // Ajout de la fonctionnalité de suppression
     const deleteBtn = item.querySelector('[data-delete]');
@@ -366,7 +423,77 @@ on($('#invertBg'),'click',()=>{
   passEl.style.background = isLight ? '#000' : '#fff';
   passEl.style.color = isLight ? '#fff' : '#000';
 });
-on($('#markUsed'),'click',()=>{ if(currentIdx>-1){ DB[currentIdx].used=true; saveDB(DB); closePass(); }});
+// Variables pour le modal d'usage
+let currentTicketForUsage = null;
+
+// Fonction pour ouvrir le modal d'usage
+function openUsageModal(ticket) {
+  currentTicketForUsage = ticket;
+  
+  // Pré-remplir les champs avec les valeurs existantes ou des valeurs par défaut
+  $('#usageFilm').value = ticket.usage ? ticket.usage.film : '';
+  $('#usageDateTime').value = ticket.usage ? dayjs(ticket.usage.datetime).format('YYYY-MM-DDTHH:mm') : new Date().toISOString().slice(0, 16);
+  $('#usageNotes').value = ticket.usage ? ticket.usage.notes : '';
+  
+  // Adapter le titre et le bouton selon le contexte
+  const isEditing = !!ticket.usage;
+  $('#usageModal h2').textContent = isEditing ? 'Modifier les informations d\'usage' : 'Marquer le ticket comme utilisé';
+  $('#confirmUsage').textContent = isEditing ? 'Mettre à jour' : 'Confirmer l\'utilisation';
+  
+  $('#usageModal').classList.add('show');
+}
+
+// Fonction pour fermer le modal d'usage
+function closeUsageModal() {
+  $('#usageModal').classList.remove('show');
+  currentTicketForUsage = null;
+}
+
+// Fonction pour confirmer l'usage
+function confirmUsage() {
+  const film = $('#usageFilm').value.trim();
+  const datetime = $('#usageDateTime').value;
+  const notes = $('#usageNotes').value.trim();
+  
+  if (!datetime) {
+    alert('Veuillez saisir la date et heure');
+    return;
+  }
+  
+  // Trouver le ticket dans la DB et le marquer comme utilisé ou le mettre à jour
+  const ticketIndex = DB.findIndex(t => t.code === currentTicketForUsage.code);
+  if (ticketIndex > -1) {
+    const isNewUsage = !DB[ticketIndex].usage;
+    
+    DB[ticketIndex].used = true;
+    DB[ticketIndex].usage = {
+      film: film || 'Film non spécifié', // Film optionnel maintenant
+      datetime: datetime,
+      notes: notes,
+      usedAt: isNewUsage ? new Date().toISOString() : (DB[ticketIndex].usage?.usedAt || new Date().toISOString()),
+      updatedAt: new Date().toISOString()
+    };
+    
+    saveDB(DB);
+    closeUsageModal();
+    
+    // Si c'était depuis le pass, le fermer aussi
+    if (document.getElementById('pass').classList.contains('show')) {
+      closePass();
+    }
+  }
+}
+
+// Event listeners pour le modal d'usage
+on($('#closeUsageModal'), 'click', closeUsageModal);
+on($('#cancelUsage'), 'click', closeUsageModal);
+on($('#confirmUsage'), 'click', confirmUsage);
+
+on($('#markUsed'),'click',()=>{ 
+  if(currentIdx>-1){ 
+    openUsageModal(DB[currentIdx]);
+  }
+});
 
 // Interactions
 on($('#btnShowAll'),'click',()=>{ SHOW_ALL=!SHOW_ALL; render(); });
