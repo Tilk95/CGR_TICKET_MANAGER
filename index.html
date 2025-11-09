@@ -83,12 +83,21 @@
     /* Champs de saisie */
     input[type="text"], input[type="datetime-local"], textarea, select{flex:1;min-width:0;background:#0e152b;border:1px solid var(--tag-bd);color:var(--fg);border-radius:12px;padding:10px 12px;font-family:inherit}
     [data-theme="light"] input[type="text"], [data-theme="light"] input[type="datetime-local"], [data-theme="light"] textarea, [data-theme="light"] select{background:#ffffff;border-color:#cbd5e1;color:#0f172a}
+    input:disabled, textarea:disabled{opacity:0.5;cursor:not-allowed}
     
     /* Informations d'usage */
     .usage-info{font-size:12px;color:var(--muted);margin-top:4px;padding:6px 8px;background:var(--tag-bg);border-radius:8px;border:1px solid var(--tag-bd)}
     .usage-info .film{font-weight:500;color:var(--accent)}
     .usage-info .datetime{color:var(--muted)}
     .usage-info .notes{font-style:italic;margin-top:4px}
+    
+    /* Interrupteur toggle */
+    .toggle-switch{position:relative;display:inline-block;width:50px;height:26px}
+    .toggle-switch input{opacity:0;width:0;height:0}
+    .toggle-slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background-color:#4a5568;transition:.3s;border-radius:26px}
+    .toggle-slider:before{position:absolute;content:"";height:20px;width:20px;left:3px;bottom:3px;background-color:#fff;transition:.3s;border-radius:50%}
+    .toggle-switch input:checked + .toggle-slider{background-color:var(--ok)}
+    .toggle-switch input:checked + .toggle-slider:before{transform:translateX(24px)}
 
     /* Pass scannable plein écran */
     #pass{position:fixed;inset:0;background:var(--pass-bg);color:var(--pass-fg);display:none;flex-direction:column;align-items:center;justify-content:center;gap:20px;z-index:50}
@@ -110,7 +119,7 @@
 <body>
 <header>
   <div class="wrap topbar">
-    <h1>🎟️ CGR Tickets</h1>
+    <h1>🎟️ CGR Tickets <span id="appVersion" class="muted" style="font-size:14px;font-weight:normal"></span></h1>
     <div class="spacer"></div>
     <button class="btn ghost" id="btnTheme">☀️ Clair</button>
     <button class="btn ghost" id="btnShowAll">Voir tous</button>
@@ -141,9 +150,61 @@
       <div class="small muted" style="margin-top:6px">Les doublons (même code) sont ignorés.</div>
     </div>
     <div class="row" style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <button class="btn primary" id="btnManualAdd">✏️ Ajout manuel</button>
       <button class="btn" id="btnImportJson">Importer JSON</button>
       <button class="btn warn" id="btnExportJson">Exporter JSON</button>
       <input id="importJsonFile" type="file" accept="application/json" hidden />
+    </div>
+  </div>
+</div>
+
+<!-- MODAL D'AJOUT MANUEL -->
+<div class="modal" id="manualAddModal">
+  <div class="sheet">
+    <div class="row" style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+      <h2>Ajouter un billet manuellement</h2>
+      <button class="btn" id="closeManualAddModal">Fermer</button>
+    </div>
+    <div style="margin-top:16px">
+      <label style="display:block;margin-bottom:8px;font-weight:500">Code CIN <span style="color:var(--danger)">*</span></label>
+      <input id="manualCode" type="text" placeholder="CIN50718P11777D0" style="width:100%;margin-bottom:16px" pattern="CIN\d{5}[A-Z]\d{5}[A-Z0-9]{2}" />
+      <div class="small muted" style="margin-top:-12px;margin-bottom:16px">Format: CIN + 5 chiffres + 1 lettre + 5 chiffres + 2 caractères</div>
+      
+      <label style="display:block;margin-bottom:8px;font-weight:500">Code Web (optionnel)</label>
+      <input id="manualCodeweb" type="text" placeholder="D60235" style="width:100%;margin-bottom:16px" maxlength="6" />
+      
+      <label style="display:block;margin-bottom:8px;font-weight:500">Type de billet</label>
+      <select id="manualType" style="width:100%;margin-bottom:16px">
+        <option value="Standard">Standard</option>
+        <option value="ICE">ICE</option>
+      </select>
+      
+      <label style="display:block;margin-bottom:8px;font-weight:500">Date de validité <span style="color:var(--danger)">*</span></label>
+      <input id="manualValidUntil" type="date" style="width:100%;margin-bottom:16px" required />
+      
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:12px;background:var(--tag-bg);border-radius:12px;border:1px solid var(--tag-bd)">
+        <label style="font-weight:500;margin:0">Ticket utilisé</label>
+        <label class="toggle-switch">
+          <input type="checkbox" id="manualUsed" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      
+      <div id="manualUsageFields" style="display:none">
+        <label style="display:block;margin-bottom:8px;font-weight:500">Film regardé (optionnel)</label>
+        <input id="manualFilm" type="text" placeholder="Nom du film" style="width:100%;margin-bottom:16px" />
+        
+        <label style="display:block;margin-bottom:8px;font-weight:500">Date et heure</label>
+        <input id="manualDateTime" type="datetime-local" style="width:100%;margin-bottom:16px" />
+        
+        <label style="display:block;margin-bottom:8px;font-weight:500">Notes (optionnel)</label>
+        <textarea id="manualNotes" placeholder="Commentaires, salle, compagnie..." style="width:100%;height:80px;resize:vertical;margin-bottom:16px"></textarea>
+      </div>
+      
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn" id="cancelManualAdd">Annuler</button>
+        <button class="btn primary" id="confirmManualAdd">Ajouter le billet</button>
+      </div>
     </div>
   </div>
 </div>
@@ -153,7 +214,6 @@
   <div class="toolbar">
     <button class="btn" id="closePass">Fermer</button>
     <div>
-      <button class="btn" id="fsToggle">Plein écran</button>
       <button class="btn" id="invertBg">Fond clair/sombre</button>
       <button class="btn warn" id="markUsed">Marquer utilisé</button>
     </div>
@@ -171,6 +231,14 @@
       <button class="btn" id="closeUsageModal">Fermer</button>
     </div>
     <div style="margin-top:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:12px;background:var(--tag-bg);border-radius:12px;border:1px solid var(--tag-bd)">
+        <label style="font-weight:500;margin:0">Ticket utilisé</label>
+        <label class="toggle-switch">
+          <input type="checkbox" id="usageUsed" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      
       <label style="display:block;margin-bottom:8px;font-weight:500">Film regardé (optionnel)</label>
       <input id="usageFilm" type="text" placeholder="Nom du film (peut être saisi plus tard)" style="width:100%;margin-bottom:16px" />
       
@@ -182,7 +250,7 @@
       
       <div style="display:flex;gap:10px;justify-content:flex-end">
         <button class="btn" id="cancelUsage">Annuler</button>
-        <button class="btn primary" id="confirmUsage">Confirmer l'utilisation</button>
+        <button class="btn primary" id="confirmUsage">Enregistrer</button>
       </div>
     </div>
   </div>
@@ -193,6 +261,7 @@ const $ = s => document.querySelector(s);
 const on = (el,ev,fn) => el && el.addEventListener(ev,fn);
 const LS_KEY = 'cgrTickets.v1';
 const THEME_KEY = 'cgrTheme';
+const APP_VERSION = 'V2'; // Version de l'application
 let SHOW_ALL = false; // Par défaut: afficher seulement les disponibles
 
 function loadDB(){ try{ return JSON.parse(localStorage.getItem(LS_KEY)||'[]'); }catch(e){ return [] } }
@@ -234,24 +303,10 @@ function render(){
         </div>` : ''}
       </div>
       <div class="actions">
-        ${(!r.used && !isExpired(r.validUntil))?'<button class="btn small" data-pass>🧾 Pass</button>':''}
-        <button class="btn small" data-toggle>✔︎</button>
-        ${r.used ? '<button class="btn small" data-edit-usage>✏️</button>' : ''}
-        <button class="btn small danger" data-delete>🗑️</button>
+        ${(!r.used && !isExpired(r.validUntil) && !SHOW_ALL)?'<button class="btn small" data-pass>🧾 Pass</button>':''}
+        ${SHOW_ALL ? '<button class="btn small" data-edit-usage>✏️ Éditer</button>' : (r.used ? '<button class="btn small" data-edit-usage>✏️</button>' : '')}
+        ${SHOW_ALL ? '<button class="btn small danger" data-delete>🗑️</button>' : ''}
       </div>`;
-    item.querySelector('[data-toggle]').onclick = ()=>{
-      if (!r.used) {
-        // Si on marque comme utilisé, ouvrir le modal d'usage
-        openUsageModal(r);
-      } else {
-        // Si on remet comme disponible, demander confirmation
-        if (confirm(`Êtes-vous sûr de vouloir remettre le ticket ${r.code} comme disponible ?\n\nLes informations d'usage (film, date, notes) seront supprimées définitivement.`)) {
-          r.used = false;
-          delete r.usage;
-          saveDB(DB);
-        }
-      }
-    };
     const passBtn = item.querySelector('[data-pass]');
     if(passBtn) passBtn.onclick = ()=> openPass(r);
     
@@ -259,17 +314,19 @@ function render(){
     const editUsageBtn = item.querySelector('[data-edit-usage]');
     if(editUsageBtn) editUsageBtn.onclick = ()=> openUsageModal(r);
     
-    // Ajout de la fonctionnalité de suppression
+    // Ajout de la fonctionnalité de suppression (uniquement en mode "Voir tous")
     const deleteBtn = item.querySelector('[data-delete]');
-    deleteBtn.onclick = () => {
-      if (confirm(`Êtes-vous sûr de vouloir supprimer le ticket ${r.code} ?\n\nCette action est irréversible.`)) {
-        const index = DB.findIndex(t => t.code === r.code);
-        if (index > -1) {
-          DB.splice(index, 1);
-          saveDB(DB);
+    if(deleteBtn) {
+      deleteBtn.onclick = () => {
+        if (confirm(`Êtes-vous sûr de vouloir supprimer le ticket ${r.code} ?\n\nCette action est irréversible.`)) {
+          const index = DB.findIndex(t => t.code === r.code);
+          if (index > -1) {
+            DB.splice(index, 1);
+            saveDB(DB);
+          }
         }
-      }
-    };
+      };
+    }
     list.appendChild(item);
   });
   const total = DB.length;
@@ -287,6 +344,130 @@ function openModal(){ $('#modal').classList.add('show'); }
 function closeModal(){ $('#modal').classList.remove('show'); }
 on($('#btnAdd'),'click',openModal);
 on($('#closeModal'),'click',closeModal);
+
+// --- Modal Ajout Manuel ---
+function openManualAddModal(){
+  // Réinitialiser le formulaire
+  $('#manualCode').value = '';
+  $('#manualCodeweb').value = '';
+  $('#manualType').value = 'Standard';
+  $('#manualValidUntil').value = '';
+  $('#manualUsed').checked = false;
+  $('#manualFilm').value = '';
+  $('#manualDateTime').value = '';
+  $('#manualNotes').value = '';
+  $('#manualUsageFields').style.display = 'none';
+  $('#manualFilm').disabled = true;
+  $('#manualDateTime').disabled = true;
+  $('#manualNotes').disabled = true;
+  
+  closeModal(); // Fermer le modal d'import
+  $('#manualAddModal').classList.add('show');
+}
+
+function closeManualAddModal(){
+  $('#manualAddModal').classList.remove('show');
+}
+
+// Fonction pour mettre à jour l'état des champs d'usage selon l'interrupteur
+function updateManualUsageFieldsState() {
+  const isUsed = $('#manualUsed').checked;
+  $('#manualUsageFields').style.display = isUsed ? 'block' : 'none';
+  $('#manualFilm').disabled = !isUsed;
+  $('#manualDateTime').disabled = !isUsed;
+  $('#manualNotes').disabled = !isUsed;
+}
+
+// Fonction pour valider et créer le billet manuellement
+function confirmManualAdd() {
+  const code = $('#manualCode').value.trim().toUpperCase();
+  const codeweb = $('#manualCodeweb').value.trim().toUpperCase() || null;
+  const type = $('#manualType').value;
+  const validUntil = $('#manualValidUntil').value;
+  const isUsed = $('#manualUsed').checked;
+  const film = $('#manualFilm').value.trim();
+  const datetime = $('#manualDateTime').value;
+  const notes = $('#manualNotes').value.trim();
+  
+  // Validation
+  if (!code) {
+    alert('Veuillez saisir le code CIN');
+    return;
+  }
+  
+  // Validation du format du code CIN
+  const codePattern = /^CIN\d{5}[A-Z]\d{5}[A-Z0-9]{2}$/;
+  if (!codePattern.test(code)) {
+    alert('Le format du code CIN est invalide. Format attendu: CIN + 5 chiffres + 1 lettre + 5 chiffres + 2 caractères');
+    return;
+  }
+  
+  if (!validUntil) {
+    alert('Veuillez saisir la date de validité');
+    return;
+  }
+  
+  // Vérifier si le code existe déjà
+  if (DB.some(t => t.code === code)) {
+    if (!confirm(`Un billet avec le code ${code} existe déjà. Voulez-vous le remplacer ?`)) {
+      return;
+    }
+    // Supprimer l'ancien billet
+    const index = DB.findIndex(t => t.code === code);
+    if (index > -1) {
+      DB.splice(index, 1);
+    }
+  }
+  
+  // Si le ticket est marqué comme utilisé, la date/heure est requise
+  if (isUsed && !datetime) {
+    alert('Veuillez saisir la date et heure d\'utilisation');
+    return;
+  }
+  
+  // Extraire les informations du code CIN
+  const core = code.slice(0, -2);
+  const prefix = core.slice(0, 8);
+  const letter = core[8];
+  const num = core.slice(9, 14);
+  
+  // Créer le billet
+  const ticket = {
+    code: code,
+    codeweb: codeweb,
+    type: type,
+    validUntil: validUntil,
+    used: isUsed,
+    prefix: prefix,
+    letter: letter,
+    num: num,
+    source: 'Ajout manuel'
+  };
+  
+  // Ajouter les informations d'usage si le ticket est utilisé
+  if (isUsed) {
+    ticket.usage = {
+      film: film || 'Film non spécifié',
+      datetime: datetime,
+      notes: notes,
+      usedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+  }
+  
+  // Ajouter le billet à la base de données
+  DB.push(ticket);
+  saveDB(DB);
+  closeManualAddModal();
+  alert('Billet ajouté avec succès !');
+}
+
+// Event listeners pour le modal d'ajout manuel
+on($('#btnManualAdd'), 'click', openManualAddModal);
+on($('#closeManualAddModal'), 'click', closeManualAddModal);
+on($('#cancelManualAdd'), 'click', closeManualAddModal);
+on($('#confirmManualAdd'), 'click', confirmManualAdd);
+on($('#manualUsed'), 'change', updateManualUsageFieldsState);
 
 // Drag & drop
 const drop = $('#drop');
@@ -416,7 +597,6 @@ function openPass(ticket){
 function closePass(){ passEl.classList.remove('show'); exitFS(); }
 
 on($('#closePass'),'click',closePass);
-on($('#fsToggle'),'click',()=>{ if(!document.fullscreenElement){ requestFS(passEl);} else { exitFS(); } });
 on($('#invertBg'),'click',()=>{
   // Basculer uniquement le pass entre clair/sombre pour améliorer la lecture par le scanner
   const isLight = getComputedStyle(passEl).backgroundColor !== 'rgb(0, 0, 0)';
@@ -426,19 +606,31 @@ on($('#invertBg'),'click',()=>{
 // Variables pour le modal d'usage
 let currentTicketForUsage = null;
 
+// Fonction pour mettre à jour l'état des champs selon l'interrupteur
+function updateUsageFieldsState() {
+  const isUsed = $('#usageUsed').checked;
+  $('#usageFilm').disabled = !isUsed;
+  $('#usageDateTime').disabled = !isUsed;
+  $('#usageNotes').disabled = !isUsed;
+}
+
 // Fonction pour ouvrir le modal d'usage
 function openUsageModal(ticket) {
   currentTicketForUsage = ticket;
+  
+  // Initialiser l'interrupteur selon l'état du ticket
+  $('#usageUsed').checked = ticket.used || false;
   
   // Pré-remplir les champs avec les valeurs existantes ou des valeurs par défaut
   $('#usageFilm').value = ticket.usage ? ticket.usage.film : '';
   $('#usageDateTime').value = ticket.usage ? dayjs(ticket.usage.datetime).format('YYYY-MM-DDTHH:mm') : new Date().toISOString().slice(0, 16);
   $('#usageNotes').value = ticket.usage ? ticket.usage.notes : '';
   
-  // Adapter le titre et le bouton selon le contexte
-  const isEditing = !!ticket.usage;
-  $('#usageModal h2').textContent = isEditing ? 'Modifier les informations d\'usage' : 'Marquer le ticket comme utilisé';
-  $('#confirmUsage').textContent = isEditing ? 'Mettre à jour' : 'Confirmer l\'utilisation';
+  // Mettre à jour l'état des champs selon l'interrupteur
+  updateUsageFieldsState();
+  
+  // Adapter le titre selon le contexte
+  $('#usageModal h2').textContent = SHOW_ALL ? 'Éditer le ticket' : (ticket.used ? 'Modifier les informations d\'usage' : 'Marquer le ticket comme utilisé');
   
   $('#usageModal').classList.add('show');
 }
@@ -451,28 +643,38 @@ function closeUsageModal() {
 
 // Fonction pour confirmer l'usage
 function confirmUsage() {
+  const isUsed = $('#usageUsed').checked;
   const film = $('#usageFilm').value.trim();
   const datetime = $('#usageDateTime').value;
   const notes = $('#usageNotes').value.trim();
   
-  if (!datetime) {
+  // Si le ticket est marqué comme utilisé, la date/heure est requise
+  if (isUsed && !datetime) {
     alert('Veuillez saisir la date et heure');
     return;
   }
   
-  // Trouver le ticket dans la DB et le marquer comme utilisé ou le mettre à jour
+  // Trouver le ticket dans la DB et le mettre à jour
   const ticketIndex = DB.findIndex(t => t.code === currentTicketForUsage.code);
   if (ticketIndex > -1) {
     const isNewUsage = !DB[ticketIndex].usage;
     
-    DB[ticketIndex].used = true;
-    DB[ticketIndex].usage = {
-      film: film || 'Film non spécifié', // Film optionnel maintenant
-      datetime: datetime,
-      notes: notes,
-      usedAt: isNewUsage ? new Date().toISOString() : (DB[ticketIndex].usage?.usedAt || new Date().toISOString()),
-      updatedAt: new Date().toISOString()
-    };
+    // Mettre à jour l'état "utilisé"
+    DB[ticketIndex].used = isUsed;
+    
+    if (isUsed) {
+      // Si le ticket est marqué comme utilisé, créer/mettre à jour les informations d'usage
+      DB[ticketIndex].usage = {
+        film: film || 'Film non spécifié',
+        datetime: datetime,
+        notes: notes,
+        usedAt: isNewUsage ? new Date().toISOString() : (DB[ticketIndex].usage?.usedAt || new Date().toISOString()),
+        updatedAt: new Date().toISOString()
+      };
+    } else {
+      // Si le ticket n'est plus utilisé, supprimer les informations d'usage
+      delete DB[ticketIndex].usage;
+    }
     
     saveDB(DB);
     closeUsageModal();
@@ -488,9 +690,11 @@ function confirmUsage() {
 on($('#closeUsageModal'), 'click', closeUsageModal);
 on($('#cancelUsage'), 'click', closeUsageModal);
 on($('#confirmUsage'), 'click', confirmUsage);
+on($('#usageUsed'), 'change', updateUsageFieldsState);
 
 on($('#markUsed'),'click',()=>{ 
   if(currentIdx>-1){ 
+    closePass(); // Fermer le pass avant d'ouvrir le modal
     openUsageModal(DB[currentIdx]);
   }
 });
@@ -499,6 +703,9 @@ on($('#markUsed'),'click',()=>{
 on($('#btnShowAll'),'click',()=>{ SHOW_ALL=!SHOW_ALL; render(); });
 on($('#q'),'input',render);
 on($('#btnTheme'),'click',toggleTheme);
+
+// Afficher la version de l'application
+$('#appVersion').textContent = APP_VERSION;
 
 // Par défaut: vue "disponibles"
 render(); updateThemeBtn();
