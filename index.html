@@ -144,15 +144,15 @@
       <h2>Ajouter des billets</h2>
       <button class="btn" id="closeModal">Fermer</button>
     </div>
-    <div id="drop" class="drop" tabindex="0">
-      Dépose tes PDF CGR ici ou <label class="btn primary" for="file">Choisir des fichiers</label>
+    <div id="drop" class="drop" tabindex="0" style="margin-top:16px">
+      <label class="btn primary" for="file">Choisir des fichiers PDF CGR (CE SNCF)</label>
       <input id="file" type="file" accept="application/pdf" multiple hidden />
       <div class="small muted" style="margin-top:6px">Les doublons (même code) sont ignorés.</div>
     </div>
     <div class="row" style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
       <button class="btn primary" id="btnManualAdd">✏️ Ajout manuel</button>
-      <button class="btn" id="btnImportJson">Importer JSON</button>
-      <button class="btn warn" id="btnExportJson">Exporter JSON</button>
+      <button class="btn" id="btnImportJson">Importer</button>
+      <button class="btn warn" id="btnExportJson">Exporter</button>
       <input id="importJsonFile" type="file" accept="application/json" hidden />
     </div>
   </div>
@@ -167,11 +167,11 @@
     </div>
     <div style="margin-top:16px">
       <label style="display:block;margin-bottom:8px;font-weight:500">Code CIN <span style="color:var(--danger)">*</span></label>
-      <input id="manualCode" type="text" placeholder="CIN50718P11777D0" style="width:100%;margin-bottom:16px" pattern="CIN\d{5}[A-Z]\d{5}[A-Z0-9]{2}" />
+      <input id="manualCode" type="text" placeholder="CIN50718P11777D0" style="width:100%;margin-bottom:16px;text-transform:uppercase" pattern="CIN\d{5}[A-Z]\d{5}[A-Z0-9]{2}" />
       <div class="small muted" style="margin-top:-12px;margin-bottom:16px">Format: CIN + 5 chiffres + 1 lettre + 5 chiffres + 2 caractères</div>
       
       <label style="display:block;margin-bottom:8px;font-weight:500">Code Web (optionnel)</label>
-      <input id="manualCodeweb" type="text" placeholder="D60235" style="width:100%;margin-bottom:16px" maxlength="6" />
+      <input id="manualCodeweb" type="text" placeholder="D60235" style="width:100%;margin-bottom:16px;text-transform:uppercase" maxlength="6" />
       
       <label style="display:block;margin-bottom:8px;font-weight:500">Type de billet</label>
       <select id="manualType" style="width:100%;margin-bottom:16px">
@@ -231,6 +231,12 @@
       <button class="btn" id="closeUsageModal">Fermer</button>
     </div>
     <div style="margin-top:16px">
+      <label style="display:block;margin-bottom:8px;font-weight:500">Type de billet</label>
+      <select id="usageType" style="width:100%;margin-bottom:16px">
+        <option value="Standard">Standard</option>
+        <option value="ICE">ICE</option>
+      </select>
+      
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:12px;background:var(--tag-bg);border-radius:12px;border:1px solid var(--tag-bd)">
         <label style="font-weight:500;margin:0">Ticket utilisé</label>
         <label class="toggle-switch">
@@ -468,6 +474,13 @@ on($('#closeManualAddModal'), 'click', closeManualAddModal);
 on($('#cancelManualAdd'), 'click', closeManualAddModal);
 on($('#confirmManualAdd'), 'click', confirmManualAdd);
 on($('#manualUsed'), 'change', updateManualUsageFieldsState);
+// Conversion automatique en majuscules et filtrage des caractères autorisés pour les codes
+on($('#manualCode'), 'input', (e) => { 
+  e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); 
+});
+on($('#manualCodeweb'), 'input', (e) => { 
+  e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); 
+});
 
 // Drag & drop
 const drop = $('#drop');
@@ -618,6 +631,9 @@ function updateUsageFieldsState() {
 function openUsageModal(ticket) {
   currentTicketForUsage = ticket;
   
+  // Initialiser le type de billet
+  $('#usageType').value = ticket.type || 'Standard';
+  
   // Initialiser l'interrupteur selon l'état du ticket
   $('#usageUsed').checked = ticket.used || false;
   
@@ -643,6 +659,7 @@ function closeUsageModal() {
 
 // Fonction pour confirmer l'usage
 function confirmUsage() {
+  const type = $('#usageType').value;
   const isUsed = $('#usageUsed').checked;
   const film = $('#usageFilm').value.trim();
   const datetime = $('#usageDateTime').value;
@@ -658,6 +675,9 @@ function confirmUsage() {
   const ticketIndex = DB.findIndex(t => t.code === currentTicketForUsage.code);
   if (ticketIndex > -1) {
     const isNewUsage = !DB[ticketIndex].usage;
+    
+    // Mettre à jour le type de billet
+    DB[ticketIndex].type = type;
     
     // Mettre à jour l'état "utilisé"
     DB[ticketIndex].used = isUsed;
