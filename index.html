@@ -115,6 +115,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.13/locale/fr.min.js"></script>
   <script>dayjs.locale('fr')</script>
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 </head>
 <body>
 <header>
@@ -167,7 +168,10 @@
     </div>
     <div style="margin-top:16px">
       <label style="display:block;margin-bottom:8px;font-weight:500">Code CIN <span style="color:var(--danger)">*</span></label>
-      <input id="manualCode" type="text" placeholder="CIN50718P11777D0" style="width:100%;margin-bottom:16px;text-transform:uppercase" pattern="CIN\d{5}[A-Z]\d{5}[A-Z0-9]{2}" />
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <input id="manualCode" type="text" placeholder="CIN50718P11777D0" style="flex:1;text-transform:uppercase" pattern="CIN\d{5}[A-Z]\d{5}[A-Z0-9]{2}" />
+        <button type="button" class="btn" id="btnScanCode" style="white-space:nowrap">📷 Scanner</button>
+      </div>
       <div class="small muted" style="margin-top:-12px;margin-bottom:16px">Format: CIN + 5 chiffres + 1 lettre + 5 chiffres + 2 caractères</div>
       
       <label style="display:block;margin-bottom:8px;font-weight:500">Code Web (optionnel)</label>
@@ -206,6 +210,18 @@
         <button class="btn primary" id="confirmManualAdd">Ajouter le billet</button>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- MODAL SCANNER CODE-BARRES -->
+<div class="modal" id="scannerModal">
+  <div class="sheet" style="max-width:100%;padding:16px">
+    <div class="row" style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:16px">
+      <h2>Scanner le code-barres</h2>
+      <button class="btn" id="closeScanner">Fermer</button>
+    </div>
+    <div id="scanner-container" style="width:100%;max-width:500px;margin:0 auto"></div>
+    <div class="small muted" style="margin-top:12px;text-align:center">Pointez la caméra vers le code-barres</div>
   </div>
 </div>
 
@@ -481,6 +497,74 @@ on($('#manualCode'), 'input', (e) => {
 on($('#manualCodeweb'), 'input', (e) => { 
   e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); 
 });
+
+// --- Scanner Code-Barres ---
+let html5QrcodeScanner = null;
+
+async function openScanner() {
+  const scannerContainer = $('#scanner-container');
+  scannerContainer.innerHTML = '';
+  
+  try {
+    // Créer une instance du scanner
+    html5QrcodeScanner = new Html5Qrcode("scanner-container");
+    
+    // Démarrer le scanner avec la caméra arrière par défaut
+    await html5QrcodeScanner.start(
+      { facingMode: "environment" }, // Caméra arrière
+      {
+        fps: 10,
+        qrbox: { width: 250, height: 250 }
+      },
+      (decodedText, decodedResult) => {
+        // Code détecté
+        const code = decodedText.trim().toUpperCase();
+        
+        // Valider le format du code CIN
+        const codePattern = /^CIN\d{5}[A-Z]\d{5}[A-Z0-9]{2}$/;
+        if (codePattern.test(code)) {
+          // Remplir le champ Code CIN
+          $('#manualCode').value = code;
+          
+          // Fermer le scanner
+          closeScanner();
+          
+          // Message de confirmation
+          alert('Code CIN scanné avec succès !');
+        } else {
+          alert('Code-barres détecté mais format invalide. Format attendu: CIN + 5 chiffres + 1 lettre + 5 chiffres + 2 caractères');
+        }
+      },
+      (errorMessage) => {
+        // Erreur silencieuse (le scanner continue de chercher)
+      }
+    );
+    
+    // Afficher le modal
+    $('#scannerModal').classList.add('show');
+  } catch (err) {
+    console.error(err);
+    alert('Erreur lors de l\'ouverture du scanner. Vérifiez que vous avez autorisé l\'accès à la caméra.');
+  }
+}
+
+async function closeScanner() {
+  if (html5QrcodeScanner) {
+    try {
+      await html5QrcodeScanner.stop();
+      await html5QrcodeScanner.clear();
+    } catch (err) {
+      console.error(err);
+    }
+    html5QrcodeScanner = null;
+  }
+  $('#scanner-container').innerHTML = '';
+  $('#scannerModal').classList.remove('show');
+}
+
+// Event listeners pour le scanner
+on($('#btnScanCode'), 'click', openScanner);
+on($('#closeScanner'), 'click', closeScanner);
 
 // Drag & drop
 const drop = $('#drop');
