@@ -214,13 +214,13 @@
 </div>
 
 <!-- MODAL SCANNER CODE-BARRES -->
-<div class="modal" id="scannerModal">
-  <div class="sheet" style="max-width:100%;padding:16px">
+<div class="modal" id="scannerModal" style="align-items:center">
+  <div class="sheet" style="max-width:90vw;max-height:90vh;padding:16px;overflow:auto">
     <div class="row" style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:16px">
       <h2>Scanner le code-barres</h2>
       <button class="btn" id="closeScanner">Fermer</button>
     </div>
-    <div id="scanner-container" style="width:100%;max-width:500px;margin:0 auto"></div>
+    <div id="scanner-container" style="width:100%;min-height:300px;max-width:500px;margin:0 auto;position:relative"></div>
     <div class="small muted" style="margin-top:12px;text-align:center">Pointez la caméra vers le code-barres</div>
   </div>
 </div>
@@ -502,6 +502,12 @@ on($('#manualCodeweb'), 'input', (e) => {
 let html5QrcodeScanner = null;
 
 async function openScanner() {
+  // Afficher le modal d'abord
+  $('#scannerModal').classList.add('show');
+  
+  // Attendre un peu pour que le modal soit visible
+  await new Promise(resolve => setTimeout(resolve, 100));
+  
   const scannerContainer = $('#scanner-container');
   scannerContainer.innerHTML = '';
   
@@ -514,7 +520,8 @@ async function openScanner() {
       { facingMode: "environment" }, // Caméra arrière
       {
         fps: 10,
-        qrbox: { width: 250, height: 250 }
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1.0
       },
       (decodedText, decodedResult) => {
         // Code détecté
@@ -539,12 +546,10 @@ async function openScanner() {
         // Erreur silencieuse (le scanner continue de chercher)
       }
     );
-    
-    // Afficher le modal
-    $('#scannerModal').classList.add('show');
   } catch (err) {
     console.error(err);
-    alert('Erreur lors de l\'ouverture du scanner. Vérifiez que vous avez autorisé l\'accès à la caméra.');
+    $('#scannerModal').classList.remove('show');
+    alert('Erreur lors de l\'ouverture du scanner. Vérifiez que vous avez autorisé l\'accès à la caméra.\n\nErreur: ' + err.message);
   }
 }
 
