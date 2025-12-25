@@ -4,7 +4,7 @@ Application PWA 100% client (Vanilla JS) pour gérer des billets CGR Cinémas av
 
 ## 🎯 Fonctionnalités Principales
 
-### 📥 **Import & Gestion**
+### 📥 ***Import & Gestion***
 - **Import PDF automatique** : Drag & drop ou sélection de fichiers
 - **Extraction intelligente** : Codes CIN, dates de validité, codes web
 - **Détection automatique** : Types ICE vs Standard (basé sur "PLACE CGR ICE")
